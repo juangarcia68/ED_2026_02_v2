@@ -1,0 +1,160 @@
+EVALUACION - Data Stream Processor
+============================================================
+Estudiante : Juan Pablo Garcia Ruedas
+Fecha      : 2026-09-21 19:54:32
+Python     : 3.12.14 (Linux)
+Evaluador  : v1.1
+Clase      : DataProcessor (modulo __main__)
+
+== Interfaz y restricciones ==
+
+[PASS ] Define add, process_next, undo, pending y current_value
+[PASS ] Se puede crear DataProcessor() sin argumentos
+[PASS ] __init__ crea una ArrayQueue, un ArrayStack y una list
+[PASS ] No sustituye Queue/Stack por deque u otra estructura
+[PASS ] ArrayQueue y ArrayStack son las del curso (no reimplementadas)
+
+   Interfaz y restricciones: 5/5 OK
+
+== Pruebas obligatorias (1-17) ==
+
+[PASS ] 1. pending() sobre un procesador vacio
+[PASS ] 2. Agregar un registro
+[PASS ] 3. Agregar varios registros
+[PASS ] 4. Procesamiento FIFO
+[PASS ] 5. Procesar un registro
+[PASS ] 6. Procesar varios registros
+[PASS ] 7. Actualizar una variable existente
+[PASS ] 8. Consultar el valor actual
+[PASS ] 9. Realizar un undo()
+[PASS ] 10. Varios undo() consecutivos
+[PASS ] 11. process_next() con la Queue vacia -> Empty
+[PASS ] 12. undo() con historial vacio -> Empty
+[PASS ] 13. Deshacer la creacion de un dato que no existia
+[PASS ] 14. Varios cambios sobre la misma variable
+[PASS ] 15. add() con formato incorrecto
+[PASS ] 16. add() con value no numerico
+[PASS ] 17. current_value() de un sensor/variable nunca procesado -> KeyError
+
+   Pruebas obligatorias (1-17): 17/17 OK
+
+== Casos borde adicionales ==
+
+[PASS ] undo de una creacion entre actualizaciones de otra variable
+[PASS ] Sensores y variables distintos no se mezclan
+[PASS ] Acepta int y float; sigue funcionando tras un Empty
+
+   Casos borde adicionales: 3/3 OK
+
+== Bonus: redo() (opcional) ==
+
+   No implementado (no aplica).
+
+== RESUMEN ==
+
+   Interfaz y restricciones          5/ 5 OK   0 fallo(s)
+   Pruebas obligatorias (1-17)      17/17 OK   0 fallo(s)
+   Casos borde adicionales           3/ 3 OK   0 fallo(s)
+
+   Total sin bonus: 25/25 OK
+
+== CODIGO DE LA CLASE ==
+
+class DataProcessor:
+
+    #   1. Se definen los tres atributos principales sin modificar la lógica interna de ArrayQueue ni ArrayStack.  
+    
+    def __init__(self):
+        self._queue = ArrayQueue()
+        self._stack = ArrayStack()
+        self._state = []
+
+     #  2. Se valida que el argumento cumpla con la estructura de 3 elementos (sensor, variable, value) y que el value sea un número.
+     #  Lanza ValueError cuando no cumple estos parámetros. Si es correcto, lo añade a _queue sin modificar el estado ni el historial.   
+    
+    def add(self,record):
+        if not isinstance(record, (tuple, list)) or len(record) != 3:
+            raise ValueError(
+                "El registro debe ser una tupla o lista de exactamente 3"
+                " elementos: (sensor, variable, value)"
+            )
+
+        sensor, variable, value = record
+        # Validar que el valor sea numérico
+        if not isinstance(value, (int, float)) or isinstance(value, bool):
+            raise ValueError("El valor ('value') del registro debe ser numérico")
+
+        # Agregar el registro a la cola respetando el orden de llegada
+        self._queue.enqueue(record)
+
+    #  3. Desencola el siguiente registro respetando el orden FIFO. Antes de actualizar _state, verifica si la combinación (sensor, variable) ya existía
+    #   para guardar su valor previo en _stack. Si no existía, guarda en el historial un marcador indicando que la clave es nueva para que undo()
+    #   pueda eliminarla si es necesario. Si la cola está vacía, genera la excepción Empty.
+    
+    def process_next(self):
+        if self._queue.is_empty():
+            raise Empty("No hay registros pendientes para procesar")
+
+        record = self._queue.dequeue()
+        sensor, variable, value = record
+
+        previous_value = None
+        existed_before = False
+        index_to_update = -1
+
+        for i, item in enumerate(self._state):
+            if item[0] == sensor and item[1] == variable:
+                existed_before = True
+                previous_value = item[2]
+                index_to_update = i
+                break
+
+        self._stack.push((sensor, variable, existed_before, previous_value))
+        if existed_before:
+            self._state[index_to_update] = (sensor, variable, value)
+        else:
+            self._state.append((sensor, variable, value))
+        return record
+
+# 4. Extrae del _stack (comportamiento LIFO) la información sobre el último registro modificado o creado.
+# Si la variable existía antes de ser procesada, restaura la tupla (sensor, variable, previous_value) en _state.
+# Si era una variable totalmente nueva que antes no existía en el sistema, la busca y la remueve de la lista _state.
+# Lanza la excepción Empty si _stack está vacío
+    
+    def undo(self):
+        if self._stack.is_empty():
+            raise Empty("No hay cambios que deshacer en el historial")
+
+        sensor, variable, existed_before, previous_value = self._stack.pop()
+
+        if existed_before:
+            for i, item in enumerate(self._state):
+                if item[0] == sensor and item[1] == variable:
+                    self._state[i] = (sensor, variable, previous_value)
+                    break
+        else:
+            for i, item in enumerate(self._state):
+                if item[0] == sensor and item[1] == variable:
+                    self._state.pop(i)
+                    break
+
+# 5. Retorna la cantidad de elementos en _queue que aguardan ser procesados.
+    def pending(self):
+        return len(self._queue)
+
+# 6. Recorre la lista _state buscando coincidencia exacta del par (sensor, variable) y retorna su value.
+# Si la combinación no ha sido registrada/procesada, lanza KeyError.
+
+    def current_value(self, sensor, variable):
+        for item in self._state:
+            if item[0] == sensor and item[1] == variable:
+                return item[2]
+
+        raise KeyError(
+            f"No existe un valor para el sensor '{sensor}' y variable"
+            f" '{variable}'"
+        )
+
+== INTEGRIDAD ==
+SHA256 codigo de la clase : f48466d424ddf5d829a67ca9610739b33613f54160e6870adb296f1d66bf7f1f
+SHA256 de este informe    : d484dba257caff523d481a737b155aefe3c2c5d46fc863ef83691e0c4e4533bc
