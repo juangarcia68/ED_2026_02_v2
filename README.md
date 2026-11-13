@@ -213,3 +213,11 @@ Escanea el código QR o entra directamente al enlace para consultar tus notas:
 🔗 [Consultar notas](https://script.google.com/macros/s/AKfycbws2_O9VlGq6_hwd5f01ZNrIDkbQVNcQrbs0wgA0kQhBign0fXPBoqzowuIDOTOPAfs6g/exec)
 
 `https://script.google.com/macros/s/AKfycbws2_O9VlGq6_hwd5f01ZNrIDkbQVNcQrbs0wgA0kQhBign0fXPBoqzowuIDOTOPAfs6g/exec`
+
+---
+
+## Examen final
+
+- Fecha: Jueves 19 de noviembre
+- Hora: 7 - 9 AM
+- Lugar: Universidad Externado de Colombia

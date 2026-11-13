@@ -1,0 +1,693 @@
+<title>Laboratorio BFS y DFS</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: cabecera con los dos conceptos, luego un laboratorio de dos columnas (grafo | estructuras), cierre con comparación. */
+:root {
+  --bg: #f2f4f7;
+  --surface: #ffffff;
+  --sunken: #e8ecf1;
+  --fg: #172030;
+  --muted: #586579;
+  --line: #c6cfdb;
+  --node: #e3e8ef;
+  --bfs: #0e7a84;
+  --bfs-mid: #8ccdd2;
+  --bfs-soft: #d6f0f2;
+  --dfs: #bf4710;
+  --dfs-mid: #f0b08c;
+  --dfs-soft: #fbe5d8;
+  --on-algo: #ffffff;
+  --ok: #1d7a3e;
+  --bad: #b3261e;
+  --code-hl: #fff3c4;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e131b; --surface: #161d28; --sunken: #1d2633; --fg: #e5eaf1; --muted: #9ba7b9; --line: #314054; --node: #253041;
+    --bfs: #45c6cf; --bfs-mid: #1f6f76; --bfs-soft: #113a3f;
+    --dfs: #ff8f55; --dfs-mid: #8f441d; --dfs-soft: #43200e;
+    --on-algo: #0e131b; --ok: #5fd08a; --bad: #ff8a80; --code-hl: #3d3514;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e131b; --surface: #161d28; --sunken: #1d2633; --fg: #e5eaf1; --muted: #9ba7b9; --line: #314054; --node: #253041;
+  --bfs: #45c6cf; --bfs-mid: #1f6f76; --bfs-soft: #113a3f;
+  --dfs: #ff8f55; --dfs-mid: #8f441d; --dfs-soft: #43200e;
+  --on-algo: #0e131b; --ok: #5fd08a; --bad: #ff8a80; --code-hl: #3d3514;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--font-body); font-size: 17px; line-height: 1.55;
+}
+.wrap {
+  max-width: 1180px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 32px 56px;
+  display: grid; gap: 40px;
+}
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; line-height: 1.15; }
+h1 { font-size: clamp(2rem, 5vw, 3.1rem); font-weight: 700; letter-spacing: -0.02em; }
+h2 { font-size: 1.6rem; font-weight: 700; }
+h3 { font-size: 1.15rem; font-weight: 700; }
+p { margin: 0; max-width: 68ch; }
+code, .mono { font-family: var(--font-mono); font-size: 0.88em; }
+.eyebrow { font-size: 0.78rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+.bfs-t { color: var(--bfs); }
+.dfs-t { color: var(--dfs); }
+
+/* ---------- Cabecera ---------- */
+header { display: grid; gap: 16px; }
+header .lead { font-size: 1.15rem; color: var(--muted); }
+.concepts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.concept {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 20px; display: grid; gap: 10px; align-content: start;
+}
+.concept .tag { display: inline-flex; gap: 8px; align-items: baseline; }
+.concept .big { font-family: var(--font-display); font-size: 2rem; font-weight: 700; }
+.mini { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-family: var(--font-mono); font-size: 0.85rem; color: var(--muted); }
+.mini .c { width: 30px; height: 30px; border-radius: 6px; display: grid; place-items: center; font-weight: 600; color: var(--fg); }
+.concept.bfs .mini .c { background: var(--bfs-soft); border: 1.5px solid var(--bfs); }
+.concept.dfs .mini .c { background: var(--dfs-soft); border: 1.5px solid var(--dfs); }
+.mini-stack { display: inline-flex; flex-direction: column; gap: 4px; }
+
+/* ---------- Laboratorio ---------- */
+.lab { display: grid; gap: 16px; }
+.lab.bfs { --algo: var(--bfs); --algo-mid: var(--bfs-mid); --algo-soft: var(--bfs-soft); }
+.lab.dfs { --algo: var(--dfs); --algo-mid: var(--dfs-mid); --algo-soft: var(--dfs-soft); }
+
+.toolbar { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: end; }
+.field { display: grid; gap: 4px; }
+.field label, .field .lbl { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+select {
+  font: inherit; font-size: 0.95rem; padding: 7px 10px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--fg);
+}
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--surface); }
+.seg button {
+  font: inherit; font-weight: 700; font-size: 0.95rem; padding: 7px 16px; border: 0; background: transparent; color: var(--muted); cursor: pointer;
+}
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"][data-algo="bfs"] { background: var(--bfs); color: var(--on-algo); }
+.seg button[aria-pressed="true"][data-algo="dfs"] { background: var(--dfs); color: var(--on-algo); }
+.check { display: flex; gap: 8px; align-items: center; font-size: 0.95rem; cursor: pointer; padding-bottom: 6px; }
+.check input { width: 18px; height: 18px; accent-color: var(--algo); }
+
+.grid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.col { display: grid; gap: 16px; min-width: 0; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; display: grid; gap: 12px; min-width: 0; }
+.panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+
+/* Grafo */
+.graph-box { background: var(--sunken); border-radius: 8px; }
+svg.graph { width: 100%; height: auto; display: block; }
+.edge { stroke: var(--line); stroke-width: 3; transition: stroke .25s, stroke-width .25s; }
+.edge.tree { stroke: var(--algo); stroke-width: 5; }
+.edge.exam { stroke: var(--fg); stroke-width: 4; stroke-dasharray: 8 6; animation: dash .6s linear infinite; }
+@keyframes dash { to { stroke-dashoffset: -14; } }
+.node { cursor: pointer; }
+.node circle { stroke-width: 3; transition: fill .25s, stroke .25s; }
+.node text.lbl { font-family: var(--font-display); font-weight: 700; font-size: 20px; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+.node.idle circle { fill: var(--node); stroke: var(--line); }
+.node.idle text.lbl { fill: var(--muted); }
+.node.frontier circle { fill: var(--algo-soft); stroke: var(--algo); stroke-dasharray: 5 4; }
+.node.frontier text.lbl { fill: var(--fg); }
+.node.done circle { fill: var(--algo-mid); stroke: var(--algo-mid); }
+.node.done text.lbl { fill: var(--fg); }
+.node.current circle { fill: var(--algo); stroke: var(--fg); }
+.node.current text.lbl { fill: var(--on-algo); }
+.node .ring { fill: none; stroke: var(--algo); stroke-width: 2; opacity: 0; }
+.node.current .ring { opacity: .6; animation: pulse 1.4s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes pulse { from { transform: scale(1); opacity: .7; } to { transform: scale(1.5); opacity: 0; } }
+.node.exam circle { stroke: var(--fg); stroke-width: 4; }
+.badge { font-family: var(--font-mono); font-size: 13px; font-weight: 600; fill: var(--algo); pointer-events: none; }
+.node:focus-visible circle { stroke: var(--fg); stroke-width: 5; }
+.node:focus { outline: none; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.85rem; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 16px; height: 16px; border-radius: 50%; border: 2px solid; display: inline-block; }
+.sw.idle { background: var(--node); border-color: var(--line); }
+.sw.frontier { background: var(--algo-soft); border-color: var(--algo); border-style: dashed; }
+.sw.current { background: var(--algo); border-color: var(--fg); }
+.sw.done { background: var(--algo-mid); border-color: var(--algo-mid); }
+.sw.tree { width: 22px; height: 0; border-radius: 0; border-width: 3px 0 0; border-color: var(--algo); }
+
+/* Explicación del paso */
+.explain {
+  background: var(--algo-soft); border-radius: 8px; padding: 14px 16px; min-height: 5.4em;
+  display: grid; gap: 6px; align-content: start;
+}
+.explain .stepno { font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700; color: var(--algo); }
+.explain .note { display: block; margin-top: 6px; font-size: 0.92rem; color: var(--muted); }
+.explain .fb-ok { color: var(--ok); font-weight: 700; }
+.explain .fb-bad { color: var(--bad); font-weight: 700; }
+
+/* Controles */
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.btn {
+  font: inherit; font-weight: 600; font-size: 0.95rem; padding: 8px 14px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--fg); cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.btn:hover:not(:disabled) { border-color: var(--algo); }
+.btn:disabled { opacity: .4; cursor: default; }
+.btn.primary { background: var(--algo); border-color: var(--algo); color: var(--on-algo); }
+.btn:focus-visible, select:focus-visible, .seg button:focus-visible, input:focus-visible { outline: 3px solid var(--algo); outline-offset: 2px; }
+.speed { display: inline-flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--muted); margin-left: auto; }
+.speed input { accent-color: var(--algo); width: 110px; }
+.progress { height: 6px; background: var(--sunken); border-radius: 3px; overflow: hidden; }
+.progress div { height: 100%; background: var(--algo); width: 0; transition: width .2s; }
+
+/* Estructura de datos */
+.ds-area { display: grid; gap: 10px; }
+.queue { display: flex; align-items: stretch; gap: 8px; }
+.queue .end { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 700; display: grid; place-items: center; text-align: center; width: 54px; flex: none; line-height: 1.2; }
+.queue .track {
+  flex: 1; min-width: 0; min-height: 62px; border: 2px solid var(--algo); border-left-style: dashed; border-right-style: dashed;
+  border-radius: 6px; padding: 8px; display: flex; gap: 6px; align-items: center; overflow-x: auto;
+}
+.stack { display: flex; justify-content: center; }
+.stack .track {
+  width: 150px; min-height: 120px; border: 2px solid var(--algo); border-top: 0; border-radius: 0 0 8px 8px;
+  padding: 8px; display: flex; flex-direction: column; gap: 6px; justify-content: flex-end;
+}
+.stack-wrap { display: grid; justify-items: center; gap: 4px; }
+.stack-wrap .end { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+.chip {
+  flex: none; min-width: 42px; height: 42px; padding: 0 10px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  font-family: var(--font-display); font-weight: 700; font-size: 1.15rem;
+  background: var(--algo-soft); border: 2px solid var(--algo); color: var(--fg);
+}
+.chip small { font-family: var(--font-mono); font-weight: 400; font-size: 0.7rem; color: var(--muted); }
+.stack .chip { width: 100%; }
+.chip.new { animation: popin .35s ease-out; box-shadow: 0 0 0 3px var(--algo-mid); }
+.chip.stale { background: transparent; border-style: dashed; color: var(--muted); text-decoration: line-through; }
+.chip.head { background: var(--algo); color: var(--on-algo); }
+.chip.head small { color: var(--on-algo); opacity: .8; }
+@keyframes popin { from { transform: scale(.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.empty { color: var(--muted); font-style: italic; font-size: 0.9rem; }
+.out-row { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; color: var(--muted); min-height: 42px; flex-wrap: wrap; }
+.out-row .chip { background: var(--surface); }
+.out-row .chip.discard { border-style: dashed; text-decoration: line-through; color: var(--muted); }
+
+.sets { display: grid; gap: 10px; }
+.set-row { display: grid; gap: 6px; }
+.set-row .chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-height: 34px; }
+.set-row .chip { height: 34px; min-width: 34px; font-size: 1rem; padding: 0 8px; }
+.set-row .chip.done { background: var(--algo-mid); border-color: var(--algo-mid); }
+.arrow { color: var(--muted); font-size: 0.9rem; }
+
+/* Pseudocódigo */
+pre.code {
+  margin: 0; font-family: var(--font-mono); font-size: 0.84rem; line-height: 1.7; background: var(--sunken);
+  border-radius: 8px; padding: 10px 0; overflow-x: auto;
+}
+pre.code .ln { display: block; padding: 0 12px 0 0; white-space: pre; transition: background .2s; border-left: 4px solid transparent; }
+pre.code .ln i { font-style: normal; display: inline-block; width: 2.6em; text-align: right; padding-right: 12px; color: var(--muted); user-select: none; }
+pre.code .ln.hl { background: var(--code-hl); border-left-color: var(--algo); }
+pre.code .kw { color: var(--algo); font-weight: 600; }
+pre.code .cm { color: var(--muted); }
+
+/* Lista de adyacencia */
+.adj { display: grid; gap: 2px; font-family: var(--font-mono); font-size: 0.9rem; }
+.adj .row { display: flex; gap: 8px; padding: 3px 8px; border-radius: 6px; flex-wrap: wrap; }
+.adj .row.cur { background: var(--algo-soft); }
+.adj .row b { min-width: 1.4em; }
+.adj .v { padding: 0 4px; border-radius: 4px; }
+.adj .v.exam { background: var(--fg); color: var(--bg); }
+
+.hint { font-size: 0.88rem; color: var(--muted); }
+kbd { font-family: var(--font-mono); font-size: 0.8em; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--surface); }
+
+/* ---------- Comparación ---------- */
+.compare { display: grid; gap: 16px; }
+.table-scroll { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+table { border-collapse: collapse; width: 100%; min-width: 620px; font-size: 0.97rem; }
+th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+thead th { font-family: var(--font-display); font-size: 1.05rem; }
+tbody th { font-weight: 600; color: var(--muted); width: 22%; }
+.tips { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.tip { border-top: 3px solid var(--line); padding-top: 12px; display: grid; gap: 6px; align-content: start; }
+.tip p { font-size: 0.97rem; }
+
+@media (max-width: 880px) {
+  .grid { grid-template-columns: minmax(0, 1fr); }
+  .tips { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 620px) {
+  .concepts { grid-template-columns: minmax(0, 1fr); }
+  .speed { margin-left: 0; }
+  body { font-size: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Estructuras de Datos · Capítulo 14 · Recorridos de grafos</div>
+    <h1>Laboratorio BFS y DFS</h1>
+    <p class="lead">Los dos recorridos hacen casi lo mismo: sacan un vértice de una lista de pendientes, lo procesan y agregan sus vecinos no visitados. La única diferencia es <b>de qué lado sacan</b> el siguiente vértice. Esa decisión cambia todo el recorrido.</p>
+    <div class="concepts">
+      <div class="concept bfs">
+        <div class="tag"><span class="big bfs-t">BFS</span><span class="eyebrow">Búsqueda en anchura</span></div>
+        <p>Avanza por <b>niveles</b>, como una onda en el agua: primero todos los vecinos a distancia 1, luego los de distancia 2, y así. Usa una <b>cola</b> (FIFO): el primero que entra es el primero que sale.</p>
+        <div class="mini"><span>sale ←</span><span class="c">B</span><span class="c">C</span><span class="c">D</span><span>← entra</span></div>
+      </div>
+      <div class="concept dfs">
+        <div class="tag"><span class="big dfs-t">DFS</span><span class="eyebrow">Búsqueda en profundidad</span></div>
+        <p>Se mete por un camino <b>hasta el fondo</b> y solo retrocede cuando no puede seguir, como quien explora un laberinto con la mano en la pared. Usa una <b>pila</b> (LIFO): el último que entra es el primero que sale.</p>
+        <div class="mini"><span class="mini-stack"><span class="c">D</span><span class="c">C</span><span class="c">B</span></span><span>← entra y sale por arriba</span></div>
+      </div>
+    </div>
+  </header>
+
+  <section class="lab bfs" id="lab" aria-label="Simulador paso a paso">
+    <div class="panel-head">
+      <h2>Simulador paso a paso</h2>
+      <span class="hint">Teclado: <kbd>→</kbd> siguiente · <kbd>←</kbd> anterior · <kbd>Espacio</kbd> reproducir</span>
+    </div>
+
+    <div class="toolbar">
+      <div class="field">
+        <span class="lbl">Algoritmo</span>
+        <div class="seg" role="group" aria-label="Algoritmo">
+          <button type="button" id="btn-bfs" data-algo="bfs" aria-pressed="true">BFS · cola</button>
+          <button type="button" id="btn-dfs" data-algo="dfs" aria-pressed="false">DFS · pila</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="preset">Grafo de ejemplo</label>
+        <select id="preset">
+          <option value="ciclos">Grafo con ciclos</option>
+          <option value="arbol">Árbol</option>
+          <option value="laberinto">Laberinto (cuadrícula)</option>
+          <option value="islas">Dos componentes</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="start">Vértice inicial</label>
+        <select id="start"></select>
+      </div>
+      <label class="check" for="predict"><input type="checkbox" id="predict"> Modo predicción</label>
+    </div>
+
+    <div class="grid">
+      <div class="col">
+        <div class="panel">
+          <div class="graph-box"><svg class="graph" id="graph" viewBox="0 0 600 400" role="img" aria-label="Grafo"></svg></div>
+          <div class="legend">
+            <span><i class="sw idle"></i>sin descubrir</span>
+            <span><i class="sw frontier"></i><span id="lg-frontier">en la cola</span></span>
+            <span><i class="sw current"></i>procesando ahora</span>
+            <span><i class="sw done"></i>ya procesado</span>
+            <span><i class="sw tree"></i>arista del árbol</span>
+            <span id="lg-badge" class="mono">d=k distancia al inicio</span>
+          </div>
+          <div class="explain" aria-live="polite">
+            <span class="stepno" id="stepno">Paso 1</span>
+            <div id="msg"></div>
+          </div>
+          <div class="progress"><div id="bar"></div></div>
+          <div class="controls">
+            <button class="btn" id="b-reset" type="button" title="Volver al inicio">⏮ Inicio</button>
+            <button class="btn" id="b-prev" type="button">◀ Anterior</button>
+            <button class="btn primary" id="b-next" type="button">Siguiente ▶</button>
+            <button class="btn" id="b-play" type="button">▶ Reproducir</button>
+            <label class="speed" for="speed">Lento <input type="range" id="speed" min="250" max="2000" step="50" value="1100"> Rápido</label>
+          </div>
+          <p class="hint">Haz clic en un vértice del grafo para empezar el recorrido desde ahí.</p>
+        </div>
+
+        <div class="panel">
+          <h3>Lista de adyacencia</h3>
+          <p class="hint">Los vecinos se revisan en orden alfabético. La fila resaltada es el vértice que se está procesando.</p>
+          <div class="adj" id="adj"></div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="panel">
+          <div class="panel-head">
+            <h3 id="ds-title">Cola de pendientes</h3>
+            <span class="mono hint" id="ds-size"></span>
+          </div>
+          <div class="ds-area" id="ds"></div>
+          <div class="out-row" id="out"></div>
+        </div>
+
+        <div class="panel sets">
+          <div class="set-row">
+            <span class="eyebrow">Conjunto visitado</span>
+            <div class="chips" id="visited"></div>
+          </div>
+          <div class="set-row">
+            <span class="eyebrow">Orden de procesamiento</span>
+            <div class="chips" id="order"></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3>Código (Python)</h3>
+          <pre class="code" id="code"></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="compare">
+    <h2>Comparación rápida</h2>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th></th><th class="bfs-t">BFS</th><th class="dfs-t">DFS</th></tr></thead>
+        <tbody>
+          <tr><th>Lista de pendientes</th><td>Cola (<code>deque</code>): <code>append</code> + <code>popleft</code></td><td>Pila (<code>list</code>): <code>append</code> + <code>pop</code>, o recursión</td></tr>
+          <tr><th>Forma del recorrido</th><td>Por niveles, de cerca hacia lejos</td><td>Un camino hasta el fondo, luego retrocede</td></tr>
+          <tr><th>Cuándo marca visitado</th><td>Al encolar, para no meter un vértice dos veces</td><td>En esta versión, al sacar de la pila; por eso un vértice puede quedar repetido y se descarta</td></tr>
+          <tr><th>Encuentra</th><td>El camino con <b>menos aristas</b> desde el inicio</td><td>Un camino cualquiera, no necesariamente el más corto</td></tr>
+          <tr><th>Tiempo</th><td><code>O(n + m)</code> con lista de adyacencia</td><td><code>O(n + m)</code> con lista de adyacencia</td></tr>
+          <tr><th>Memoria extra</th><td>Puede guardar un nivel completo a la vez</td><td>Proporcional a la profundidad del camino actual</td></tr>
+          <tr><th>Usos típicos</th><td>Ruta más corta sin pesos, grados de separación, niveles</td><td>Detectar ciclos, orden topológico, componentes, laberintos</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="tips">
+      <div class="tip"><h3>Prueba 1</h3><p>En «Grafo con ciclos», corre BFS desde A y mira las distancias <code>d=k</code>. Luego compara con el camino que siguen las aristas del árbol de DFS.</p></div>
+      <div class="tip"><h3>Prueba 2</h3><p>Activa el modo predicción. Antes de cada salida tendrás que hacer clic en el vértice que crees que sale de la cola o de la pila.</p></div>
+      <div class="tip"><h3>Prueba 3</h3><p>En «Dos componentes», empieza en A. ¿Qué vértices nunca se visitan? Así se cuentan las componentes conexas: un recorrido nuevo por cada vértice no visitado.</p></div>
+    </div>
+  </section>
+</div>
+
+<script>
+const PRESETS = {
+  ciclos: {
+    nodes: { A:[80,200], B:[200,90], C:[200,310], D:[340,60], E:[330,200], F:[340,340], G:[480,120], H:[520,280] },
+    edges: [['A','B'],['A','C'],['B','D'],['B','E'],['C','E'],['C','F'],['D','G'],['E','G'],['E','H'],['F','H']]
+  },
+  arbol: {
+    nodes: { A:[300,50], B:[170,140], C:[430,140], D:[90,240], E:[240,240], F:[370,240], G:[510,240], H:[45,345], I:[140,345], J:[510,345] },
+    edges: [['A','B'],['A','C'],['B','D'],['B','E'],['C','F'],['C','G'],['D','H'],['D','I'],['G','J']]
+  },
+  laberinto: {
+    nodes: { A:[90,70], B:[230,70], C:[370,70], D:[510,70], E:[90,200], F:[230,200], G:[370,200], H:[510,200], I:[90,330], J:[230,330], K:[370,330], L:[510,330] },
+    edges: [['A','B'],['B','C'],['C','D'],['A','E'],['E','I'],['I','J'],['J','F'],['F','G'],['G','C'],['G','K'],['K','L'],['L','H'],['D','H']]
+  },
+  islas: {
+    nodes: { A:[80,110], B:[200,60], C:[210,190], D:[90,300], E:[220,330], F:[400,90], G:[530,150], H:[420,250], I:[530,330] },
+    edges: [['A','B'],['A','C'],['B','C'],['A','D'],['D','E'],['F','G'],['F','H'],['G','H'],['H','I']]
+  }
+};
+
+const CODE = {
+  bfs: [
+    '<span class="kw">def</span> bfs(G, s):',
+    '    visitado = {s}',
+    '    cola = deque([s])',
+    '    <span class="kw">while</span> cola:',
+    '        u = cola.popleft()      <span class="cm"># sale del frente</span>',
+    '        procesar(u)',
+    '        <span class="kw">for</span> v <span class="kw">in</span> G[u]:',
+    '            <span class="kw">if</span> v <span class="kw">not in</span> visitado:',
+    '                visitado.add(v)',
+    '                cola.append(v)  <span class="cm"># entra al final</span>'
+  ],
+  dfs: [
+    '<span class="kw">def</span> dfs(G, s):',
+    '    visitado = set()',
+    '    pila = [s]',
+    '    <span class="kw">while</span> pila:',
+    '        u = pila.pop()          <span class="cm"># sale del tope</span>',
+    '        <span class="kw">if</span> u <span class="kw">in</span> visitado:',
+    '            <span class="kw">continue</span>',
+    '        visitado.add(u)',
+    '        procesar(u)',
+    '        <span class="kw">for</span> v <span class="kw">in</span> reversed(G[u]):',
+    '            <span class="kw">if</span> v <span class="kw">not in</span> visitado:',
+    '                pila.append(v)  <span class="cm"># entra al tope</span>'
+  ]
+};
+
+const $ = s => document.querySelector(s);
+const ek = (a, b) => a < b ? a + '-' + b : b + '-' + a;
+const S = { algo: 'bfs', preset: 'ciclos', start: 'A', adj: {}, steps: [], i: 0, timer: null, awaiting: false, feedback: '' };
+
+function buildAdj(p) {
+  const adj = {};
+  Object.keys(p.nodes).forEach(n => adj[n] = []);
+  p.edges.forEach(([a, b]) => { adj[a].push(b); adj[b].push(a); });
+  Object.values(adj).forEach(l => l.sort());
+  return adj;
+}
+
+function finalMsg(order, kind) {
+  const all = Object.keys(S.adj);
+  const missing = all.filter(n => !order.includes(n));
+  let m = `La ${kind} quedó vacía: <b>el recorrido terminó</b>. Orden: <b>${order.join(' → ')}</b>.`;
+  if (missing.length) m += `<span class="note">Los vértices ${missing.join(', ')} no se alcanzaron porque no hay camino desde ${S.start}. Están en otra componente conexa.</span>`;
+  return m;
+}
+
+function genBFS(G, s) {
+  const steps = [], visited = new Set([s]), queue = [s], order = [], dist = { [s]: 0 }, tree = [];
+  const snap = (lines, msg, x = {}) => steps.push({ lines, msg, ds: queue.map(n => ({ n })), visited: [...visited], order: [...order], dist: { ...dist }, tree: tree.map(e => e.slice()), ...x });
+  snap([2, 3], `Empezamos en <b>${s}</b>. Lo marcamos como visitado y lo metemos en la cola. Está a distancia 0 de sí mismo.`, { pushed: s });
+  while (queue.length) {
+    const u = queue.shift();
+    order.push(u);
+    snap([4, 5, 6], `La cola no está vacía. Sacamos <b>${u}</b> del <b>frente</b>: es el que lleva más tiempo esperando (FIFO). Lo procesamos.`, { current: u, popped: u });
+    for (const v of G[u]) {
+      if (!visited.has(v)) {
+        visited.add(v); queue.push(v); dist[v] = dist[u] + 1; tree.push([u, v]);
+        snap([7, 8, 9, 10], `Revisamos <b>${v}</b>, vecino de <b>${u}</b>. No estaba visitado: lo marcamos y lo ponemos al <b>final</b> de la cola. Queda a distancia ${dist[v]} del inicio.`, { current: u, exam: v, pushed: v });
+      } else {
+        snap([7, 8], `Revisamos <b>${v}</b>, vecino de <b>${u}</b>. Ya estaba visitado, así que no lo volvemos a meter.`, { current: u, exam: v });
+      }
+    }
+  }
+  snap([4], finalMsg(order, 'cola'), { done: true });
+  return steps;
+}
+
+function genDFS(G, s) {
+  const steps = [], visited = new Set(), stack = [{ n: s, from: null }], order = [], tree = [];
+  const snap = (lines, msg, x = {}) => steps.push({ lines, msg, ds: stack.map(e => ({ ...e })), visited: [...visited], order: [...order], dist: null, tree: tree.map(e => e.slice()), ...x });
+  snap([2, 3], `Empezamos en <b>${s}</b>: lo metemos en la pila. En esta versión el vértice se marca como visitado cuando sale de la pila, no cuando entra.`, { pushed: s });
+  let explainedReverse = false;
+  while (stack.length) {
+    const { n: u, from } = stack.pop();
+    if (visited.has(u)) {
+      snap([4, 5, 6, 7], `Sacamos <b>${u}</b> del <b>tope</b>. Ya estaba visitado porque llegamos a él por otro camino. Lo descartamos y seguimos con el siguiente.`, { popped: u, discard: true });
+      continue;
+    }
+    visited.add(u); order.push(u);
+    if (from) tree.push([from, u]);
+    snap([4, 5, 8, 9], `Sacamos <b>${u}</b> del <b>tope</b>: el último que entró (LIFO). No estaba visitado, así que lo marcamos y lo procesamos.` + (from ? ` Llegamos a él desde <b>${from}</b>.` : ''), { current: u, popped: u });
+    for (const v of [...G[u]].reverse()) {
+      const note = explainedReverse ? '' : `<span class="note">Los vecinos se recorren al revés (${[...G[u]].reverse().join(', ')}) para que el primero en orden alfabético quede arriba y salga primero.</span>`;
+      explainedReverse = true;
+      if (!visited.has(v)) {
+        stack.push({ n: v, from: u });
+        snap([10, 11, 12], `Revisamos <b>${v}</b>, vecino de <b>${u}</b>. No está visitado: lo <b>apilamos</b> encima.` + note, { current: u, exam: v, pushed: v });
+      } else {
+        snap([10, 11], `Revisamos <b>${v}</b>, vecino de <b>${u}</b>. Ya está visitado: no lo apilamos.` + note, { current: u, exam: v });
+      }
+    }
+  }
+  snap([4], finalMsg(order, 'pila'), { done: true });
+  return steps;
+}
+
+const SVGNS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs, parent) {
+  const e = document.createElementNS(SVGNS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+
+function drawGraph() {
+  const p = PRESETS[S.preset], svg = $('#graph');
+  svg.innerHTML = '';
+  const ge = el('g', {}, svg), gn = el('g', {}, svg);
+  p.edges.forEach(([a, b]) => {
+    const [x1, y1] = p.nodes[a], [x2, y2] = p.nodes[b];
+    el('line', { x1, y1, x2, y2, class: 'edge', 'data-e': ek(a, b) }, ge);
+  });
+  Object.entries(p.nodes).forEach(([n, [x, y]]) => {
+    const g = el('g', { class: 'node idle', 'data-n': n, tabindex: 0, role: 'button', 'aria-label': 'Vértice ' + n }, gn);
+    el('circle', { cx: x, cy: y, r: 24, class: 'ring' }, g);
+    el('circle', { cx: x, cy: y, r: 24 }, g);
+    const t = el('text', { x, y, class: 'lbl' }, g); t.textContent = n;
+    const bd = el('text', { x: x + 22, y: y - 24, class: 'badge' }, g); bd.textContent = '';
+    g.addEventListener('click', () => onNodeClick(n));
+    g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onNodeClick(n); } });
+  });
+}
+
+function rebuild() {
+  stop();
+  const p = PRESETS[S.preset];
+  S.adj = buildAdj(p);
+  if (!p.nodes[S.start]) S.start = Object.keys(p.nodes)[0];
+  const sel = $('#start');
+  sel.innerHTML = Object.keys(p.nodes).map(n => `<option value="${n}"${n === S.start ? ' selected' : ''}>${n}</option>`).join('');
+  S.steps = S.algo === 'bfs' ? genBFS(S.adj, S.start) : genDFS(S.adj, S.start);
+  S.i = 0; S.awaiting = false; S.feedback = '';
+  $('#lab').className = 'lab ' + S.algo;
+  $('#btn-bfs').setAttribute('aria-pressed', S.algo === 'bfs');
+  $('#btn-dfs').setAttribute('aria-pressed', S.algo === 'dfs');
+  $('#ds-title').textContent = S.algo === 'bfs' ? 'Cola de pendientes' : 'Pila de pendientes';
+  $('#lg-frontier').textContent = S.algo === 'bfs' ? 'en la cola' : 'en la pila';
+  $('#lg-badge').textContent = S.algo === 'bfs' ? 'd=k distancia al inicio' : '#k orden de visita';
+  $('#code').innerHTML = CODE[S.algo].map((l, i) => `<span class="ln" data-l="${i + 1}"><i>${i + 1}</i>${l}</span>`).join('');
+  drawGraph();
+  render();
+}
+
+function chip(text, cls = '', sub = '') {
+  return `<span class="chip ${cls}">${text}${sub ? `<small>${sub}</small>` : ''}</span>`;
+}
+
+function render() {
+  const st = S.steps[S.i], last = S.steps.length - 1;
+  const inDS = new Set(st.ds.filter(e => !st.visited.includes(e.n) || S.algo === 'bfs').map(e => e.n));
+  const treeSet = new Set(st.tree.map(([a, b]) => ek(a, b)));
+
+  document.querySelectorAll('#graph .node').forEach(g => {
+    const n = g.dataset.n;
+    let cls = 'idle';
+    if (n === st.current) cls = 'current';
+    else if (st.order.includes(n)) cls = 'done';
+    else if (inDS.has(n)) cls = 'frontier';
+    if (n === st.exam) cls += ' exam';
+    g.setAttribute('class', 'node ' + cls);
+    const bd = g.querySelector('.badge');
+    if (S.algo === 'bfs') bd.textContent = st.dist && n in st.dist ? 'd=' + st.dist[n] : '';
+    else { const k = st.order.indexOf(n); bd.textContent = k >= 0 ? '#' + (k + 1) : ''; }
+  });
+  document.querySelectorAll('#graph .edge').forEach(l => {
+    const e = l.dataset.e;
+    let cls = 'edge';
+    if (treeSet.has(e)) cls += ' tree';
+    if (st.current && st.exam && e === ek(st.current, st.exam)) cls += ' exam';
+    l.setAttribute('class', cls);
+  });
+
+  // Estructura de datos
+  const ds = $('#ds');
+  if (S.algo === 'bfs') {
+    const items = st.ds.map((e, k) => chip(e.n, [k === 0 ? 'head' : '', st.pushed && k === st.ds.length - 1 ? 'new' : ''].join(' '))).join('');
+    ds.innerHTML = `<div class="queue"><span class="end">Frente<br>sale ←</span><div class="track">${items || '<span class="empty">vacía</span>'}</div><span class="end">Final<br>← entra</span></div>`;
+  } else {
+    const items = st.ds.map((e, k) => {
+      const stale = st.visited.includes(e.n);
+      const cls = [k === st.ds.length - 1 ? 'head' : '', st.pushed && k === st.ds.length - 1 ? 'new' : '', stale ? 'stale' : ''].join(' ');
+      return chip(e.n, cls, e.from ? 'desde ' + e.from : 'inicio');
+    }).reverse().join('');
+    ds.innerHTML = `<div class="stack-wrap"><span class="end">↓ Tope: entra y sale ↑</span><div class="stack"><div class="track">${items || '<span class="empty">vacía</span>'}</div></div></div>`;
+  }
+  $('#ds-size').textContent = `len = ${st.ds.length}`;
+  const out = $('#out');
+  if (st.popped) out.innerHTML = `Acaba de salir: ${chip(st.popped, st.discard ? 'discard' : '')}` + (st.discard ? ' descartado' : '');
+  else if (st.done) out.innerHTML = 'No queda nada por procesar.';
+  else out.innerHTML = `Siguiente en salir: ${chip(S.algo === 'bfs' ? st.ds[0].n : st.ds[st.ds.length - 1].n)}`;
+
+  $('#visited').innerHTML = st.visited.length ? st.visited.map(n => chip(n, st.order.includes(n) ? 'done' : '')).join('') : '<span class="empty">vacío</span>';
+  $('#order').innerHTML = st.order.length ? st.order.map(n => chip(n, 'done')).join('<span class="arrow">→</span>') : '<span class="empty">todavía nada</span>';
+
+  document.querySelectorAll('#code .ln').forEach(l => l.classList.toggle('hl', st.lines.includes(+l.dataset.l)));
+
+  $('#adj').innerHTML = Object.keys(S.adj).map(n => {
+    const vs = S.adj[n].map(v => `<span class="v${n === st.current && v === st.exam ? ' exam' : ''}">${v}</span>`).join(', ');
+    return `<div class="row${n === st.current ? ' cur' : ''}"><b>${n}:</b><span>[${vs}]</span></div>`;
+  }).join('');
+
+  $('#stepno').textContent = `Paso ${S.i + 1} de ${S.steps.length}`;
+  let msg = st.msg;
+  if (S.feedback) msg = S.feedback + ' ' + msg;
+  if (S.awaiting) msg = `<b>Tu turno:</b> ¿qué vértice sale ahora de la ${S.algo === 'bfs' ? 'cola' : 'pila'}? Haz clic en él en el grafo.`;
+  $('#msg').innerHTML = msg;
+  $('#bar').style.width = (S.i / last * 100) + '%';
+  $('#b-prev').disabled = S.i === 0;
+  $('#b-reset').disabled = S.i === 0;
+  $('#b-next').disabled = S.i === last || S.awaiting;
+  $('#b-play').disabled = S.i === last;
+}
+
+function next() {
+  if (S.i >= S.steps.length - 1) return;
+  const nx = S.steps[S.i + 1];
+  if ($('#predict').checked && !S.timer && nx.popped && !S.awaiting) {
+    S.awaiting = true; S.feedback = ''; render(); return;
+  }
+  S.feedback = '';
+  S.i++; render();
+}
+function prev() { if (S.i > 0) { S.awaiting = false; S.feedback = ''; S.i--; render(); } }
+
+function onNodeClick(n) {
+  if (S.awaiting) {
+    const ans = S.steps[S.i + 1].popped;
+    S.awaiting = false;
+    S.feedback = n === ans
+      ? `<span class="fb-ok">¡Correcto! Sale ${ans}.</span>`
+      : `<span class="fb-bad">No. Elegiste ${n}, pero sale ${ans}.</span>`;
+    S.i++; render(); return;
+  }
+  S.start = n; rebuild();
+}
+
+function play() {
+  if (S.timer) { stop(); return; }
+  S.awaiting = false;
+  if (S.i >= S.steps.length - 1) return;
+  $('#b-play').textContent = '⏸ Pausar';
+  const tick = () => {
+    if (S.i >= S.steps.length - 1) { stop(); return; }
+    S.feedback = ''; S.i++; render();
+    S.timer = setTimeout(tick, 2250 - +$('#speed').value);
+  };
+  S.timer = setTimeout(tick, 150);
+}
+function stop() {
+  clearTimeout(S.timer); S.timer = null;
+  $('#b-play').textContent = '▶ Reproducir';
+  if (S.steps.length) render();
+}
+
+$('#b-next').addEventListener('click', next);
+$('#b-prev').addEventListener('click', () => { stop(); prev(); });
+$('#b-reset').addEventListener('click', () => { stop(); S.i = 0; S.awaiting = false; S.feedback = ''; render(); });
+$('#b-play').addEventListener('click', play);
+$('#btn-bfs').addEventListener('click', () => { S.algo = 'bfs'; rebuild(); });
+$('#btn-dfs').addEventListener('click', () => { S.algo = 'dfs'; rebuild(); });
+$('#preset').addEventListener('change', e => { S.preset = e.target.value; rebuild(); });
+$('#start').addEventListener('change', e => { S.start = e.target.value; rebuild(); });
+$('#predict').addEventListener('change', () => { S.awaiting = false; render(); });
+document.addEventListener('keydown', e => {
+  const tag = (e.target.tagName || '').toLowerCase();
+  if (tag === 'select' || tag === 'input' || tag === 'button') return;
+  if (e.target.closest && e.target.closest('.node')) return;
+  if (e.key === 'ArrowRight') { e.preventDefault(); next(); }
+  else if (e.key === 'ArrowLeft') { e.preventDefault(); stop(); prev(); }
+  else if (e.key === ' ') { e.preventDefault(); play(); }
+});
+
+rebuild();
+</script>
